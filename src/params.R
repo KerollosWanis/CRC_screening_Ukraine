@@ -1,6 +1,8 @@
 params <- 
   list(
     
+    starting_age = 50,
+    
     prevalence_low_risk_polyp_age_50 = 0.2,
     prevalence_low_risk_polyp_age_60 = 0.4,
     prevalence_low_risk_polyp_age_70 = 0.5,
@@ -31,19 +33,25 @@ params <-
     preclinical_distant_CRC_to_clinical_distant_CRC = 1,
     
     adherence_FOBT = 0.75,
-    adherence_sigmoidoscopy_with_FOBT = 0.75,
+    adherence_FIT = 0.75,
+    adherence_sigmoidoscopy = 0.75,
     adherence_colonoscopy = 0.8,
     adherence_colonoscopy_after_positive_screening = 0.84,
     
-    FOBT_sens_low_risk_polyp = 0.03,
-    FOBT_sens_high_risk_polyp = 0.34,
-    FOBT_sens_CRC = 0.72,
-    FOBT_spec = 0.91,
+    FOBT_sens_low_risk_polyp = 0.10,
+    FOBT_sens_high_risk_polyp = 0.24,
+    FOBT_sens_CRC = 0.70,
+    FOBT_spec = 0.93,
     
-    colonoscopy_sigmoidoscopy_sens_low_risk_polyp = 0.92,
-    colonoscopy_sigmoidoscopy_sens_high_risk_polyp = 0.97,
-    colonoscopy_sigmoidoscopy_sens_CRC = 0.93,
-    colonoscopy_sigmoidoscopy_spec = 1,
+    FIT_sens_low_risk_polyp = 0.17,
+    FIT_sens_high_risk_polyp = 0.42,
+    FIT_sens_CRC = 0.92,
+    FIT_spec = 0.90,
+    
+    colonoscopy_sigmoidoscopy_sens_low_risk_polyp = 0.85,
+    colonoscopy_sigmoidoscopy_sens_high_risk_polyp = 0.95,
+    colonoscopy_sigmoidoscopy_sens_CRC = 0.95,
+    sigmoidoscopy_spec = 0.92,
     prob_neg_sigmoidoscopy_proximal_neoplasm = 0.21,
     
     death_colonoscopy_perforation = 0.012,
@@ -58,6 +66,7 @@ params <-
     
     colonoscopy_cost = 100,
     FOBT_cost = 8,
+    FIT_cost = 22,
     sigmoidoscopy_cost = 20,
     colonoscopy_perforation_tx_cost = 500,
     local_cancer_tx_cost = 500,
