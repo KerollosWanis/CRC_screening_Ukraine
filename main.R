@@ -20,10 +20,10 @@ source('./src/model_functions.R')
 # Set monte carlo simulation values
 ########################################
 
-N <- 100000
-N_years <- 50
-screening_type <- 'colonoscopy' #choose 'FOBT', 'FOBT + flex sig', 'flex sig', 'colonoscopy', 'FIT', or 'none'
-all_years <- 'y' #y for list including sim at every year, n for final year only
+N <- 1000000
+N_years <- 5
+screening_type <- 'none' #choose 'FOBT', 'FOBT + flex sig', 'flex sig', 'colonoscopy', 'FIT', or 'none'
+all_years <- 'n' #y for list including sim at every year, n for final year only
 
 ########################################
 # Initialize monte carlo simulation data

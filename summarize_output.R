@@ -7,6 +7,7 @@ loadRData <- function(fileName){
   load(fileName)
   get(ls()[ls() != "fileName"])
 }
+
 none <- loadRData("./output/none_1e+07_50.Rdata")
 FOBT <- loadRData("./output/FOBT_1e+07_50.Rdata")
 FOBT_flex_sig <- loadRData("./output/FOBT + flex sig_1e+07_50.Rdata")
@@ -14,6 +15,19 @@ flex_sig <- loadRData("./output/flex sig_1e+07_50.Rdata")
 FIT <- loadRData("./output/FIT_1e+07_50.Rdata")
 colonoscopy <- loadRData("./output/colonoscopy_1e+07_50.Rdata")
 
+none <- loadRData("./output/none_1e+07_5.Rdata")
+FOBT <- loadRData("./output/FOBT_1e+07_5.Rdata")
+FOBT_flex_sig <- loadRData("./output/FOBT + flex sig_1e+07_5.Rdata")
+flex_sig <- loadRData("./output/flex sig_1e+07_5.Rdata")
+FIT <- loadRData("./output/FIT_1e+07_5.Rdata")
+colonoscopy <- loadRData("./output/colonoscopy_1e+07_5.Rdata")
+
+none <- loadRData("./output/none_1e+07_1.Rdata")
+FOBT <- loadRData("./output/FOBT_1e+07_1.Rdata")
+FOBT_flex_sig <- loadRData("./output/FOBT + flex sig_1e+07_1.Rdata")
+flex_sig <- loadRData("./output/flex sig_1e+07_1.Rdata")
+FIT <- loadRData("./output/FIT_1e+07_1.Rdata")
+colonoscopy <- loadRData("./output/colonoscopy_1e+07_1.Rdata")
 
 # summaries
 
