@@ -6,10 +6,17 @@ initialize_sim_data <- function(params, N){
   with(params,{
     
     out <- data.frame(
+      stringsAsFactors=FALSE,
       #simulation id 
       sim_id = 1:N,
       #starting age
-      age = rep(starting_age, N) %>% as.integer(),
+      starting_age = if(length(starting_ages)==1){rep(starting_ages, N)} else {
+        sample(starting_ages, size=N, prob=starting_age_distribution, replace=T) %>% as.integer()
+      },
+      #starting year,
+      start_program_year = sample(1:(1/proportion_entering_per_year), size=N, prob=rep(proportion_entering_per_year, 1/proportion_entering_per_year), replace=T) %>% as.integer(),
+      #individual screening program type
+      individual_screening_type = rep("none", N) %>% as.character(),
       #clinical CRC status variables set to 0 for starting cohort
       clinical_localized_CRC = rep(0, N) %>% as.integer(),
       clinical_regional_CRC = rep(0, N) %>% as.integer(),
@@ -22,8 +29,6 @@ initialize_sim_data <- function(params, N){
       dead = rep(0, N) %>% as.integer(),
       CRC_death = rep(0, N) %>% as.integer(),
       #variables to track screening procedures
-      next_possible_sigmoidoscopy_age = rep(starting_age-1, N) %>% as.integer(),
-      next_possible_colonoscopy_age = rep(starting_age-1, N) %>% as.integer(),
       hx_of_polyps = rep(0, N) %>% as.integer(),
       hx_of_CRC = rep(0, N) %>% as.integer(),
       colonoscopy = rep(0, N) %>% as.integer(),
@@ -37,7 +42,7 @@ initialize_sim_data <- function(params, N){
       FIT_positive = rep(0, N) %>% as.integer(),
       sigmoidoscopy = rep(0, N) %>% as.integer(),
       sigmoidoscopy_positive = rep(0, N) %>% as.integer(),
-      #QALYs gained since age 50
+      #QALYs gained since starting age
       QALYs_gained = rep(0, N) %>% as.integer(),
       #cost incurred during clinical course
       cost_attained = rep(0, N) %>% as.integer(),
@@ -45,46 +50,60 @@ initialize_sim_data <- function(params, N){
       num_colonoscopies = rep(0, N) %>% as.integer(),
       num_sigmoidoscopies = rep(0, N) %>% as.integer(),
       num_FIT = rep(0, N) %>% as.integer(),
-      num_FOBT = rep(0, N) %>% as.integer(),
-      #starting prevalence of low risk polyp
-      low_risk_polyp = rbinom(n=N, size=1, prob=prevalence_low_risk_polyp_age_50)
+      num_FOBT = rep(0, N) %>% as.integer()
     ) %>% mutate(
+      #variables to track screening procedures
+      next_possible_sigmoidoscopy_age = starting_age-1 %>% as.integer(),
+      next_possible_colonoscopy_age = starting_age-1 %>% as.integer(),
+      age = starting_age,
+      #temporary individual prevalence variables
+      prevalence_low_risk_polyp = predict(low_risk_polyp_model, newdata = data.frame(age=age)),
+      prevalence_high_risk_polyp = predict(high_risk_polyp_model, newdata = data.frame(age=age)),
+      prevalence_preclinical_early_CRC = predict(prevalence_preclinical_early_CRC_model, newdata = data.frame(age=age)),
+      prevalence_preclinical_regional_CRC = predict(prevalence_preclinical_regional_CRC_model, newdata = data.frame(age=age)),
+      prevalence_preclinical_distant_CRC = predict(prevalence_preclinical_distant_CRC_model, newdata = data.frame(age=age)),
+      #starting prevalence of low risk polyp
+      low_risk_polyp = rbinom(n=n(), size=1, prob=prevalence_low_risk_polyp),
       #starting prevalence of other preclinical tumors (probabilities are converted to conditional probabilities)
       high_risk_polyp = case_when(
         low_risk_polyp == 1 ~ as.integer(0),
         TRUE ~ rbinom(n=n(), size=1, 
-                      prob=prevalence_high_risk_polyp_age_50/
-                        (1-prevalence_low_risk_polyp_age_50))
+                      prob=prevalence_high_risk_polyp/
+                        (1-prevalence_low_risk_polyp))
       ),
       preclinical_early_CRC = case_when(
         low_risk_polyp == 1 | high_risk_polyp == 1 ~ as.integer(0),
         TRUE ~ rbinom(n=n(), size=1, 
-                      prob=prevalence_preclinical_early_CRC_age_50/
-                        (1-prevalence_low_risk_polyp_age_50-
-                           prevalence_high_risk_polyp_age_50))
+                      prob=prevalence_preclinical_early_CRC/
+                        (1-prevalence_low_risk_polyp-
+                           prevalence_high_risk_polyp))
       ),
       preclinical_regional_CRC = case_when(
         low_risk_polyp == 1 | high_risk_polyp == 1 | preclinical_early_CRC == 1 ~ as.integer(0),
         TRUE ~ rbinom(n=n(), size=1, 
-                      prob=prevalence_preclinical_regional_CRC_age_50/
-                        (1-prevalence_low_risk_polyp_age_50-
-                           prevalence_high_risk_polyp_age_50-
-                           prevalence_preclinical_early_CRC_age_50))
+                      prob=prevalence_preclinical_regional_CRC/
+                        (1-prevalence_low_risk_polyp-
+                           prevalence_high_risk_polyp-
+                           prevalence_preclinical_early_CRC))
       ),
       preclinical_distant_CRC = case_when(
         low_risk_polyp == 1 | high_risk_polyp == 1 | preclinical_early_CRC == 1 | preclinical_regional_CRC == 1 ~ as.integer(0),
         TRUE ~ rbinom(n=n(), size=1, 
-                      prob=prevalence_preclinical_distant_CRC_age_50/
-                        (1-prevalence_low_risk_polyp_age_50-
-                           prevalence_high_risk_polyp_age_50-
-                           prevalence_preclinical_early_CRC_age_50-
-                           prevalence_preclinical_regional_CRC_age_50))
+                      prob=prevalence_preclinical_distant_CRC/
+                        (1-prevalence_low_risk_polyp-
+                           prevalence_high_risk_polyp-
+                           prevalence_preclinical_early_CRC-
+                           prevalence_preclinical_regional_CRC))
       ),
       normal_mucosa = case_when(
         low_risk_polyp == 1 | high_risk_polyp == 1 | preclinical_early_CRC == 1 | preclinical_regional_CRC == 1 | preclinical_distant_CRC == 1 ~ as.integer(0),
         TRUE ~ as.integer(1)
       )
-    )
+    ) %>% dplyr::select(-c(prevalence_low_risk_polyp,
+                           prevalence_high_risk_polyp,
+                           prevalence_preclinical_early_CRC,
+                           prevalence_preclinical_regional_CRC,
+                           prevalence_preclinical_distant_CRC))
     
     return(out)
     
@@ -154,8 +173,13 @@ assign_screening_strategy <- function(params, sim_data){
   
   with(params, {
     
-    #update an individual's next possible screening age based on results of last colonoscopy
+    #update individual screening program type
     out <- sim_data %>%
+      mutate(individual_screening_type = case_when( (age-starting_age+1) >= start_program_year ~ as.character(screening_type),
+                                                    TRUE ~ "none"))
+    
+    #update an individual's next possible screening age based on results of last colonoscopy
+    out <- out %>%
       mutate(
         next_possible_colonoscopy_age = case_when(
           clinical_distant_CRC_trt == 1 ~ as.integer(0),
@@ -169,7 +193,7 @@ assign_screening_strategy <- function(params, sim_data){
           TRUE ~ next_possible_colonoscopy_age
         ),
         next_possible_sigmoidoscopy_age = case_when(
-          !(screening_type %in% c('FOBT + flex sig', 'flex sig')) ~ as.integer(0),
+          !(individual_screening_type %in% c('FOBT + flex sig', 'flex sig')) ~ as.integer(0),
           hx_of_polyps == 1 | hx_of_CRC == 1 ~ as.integer(0),
           sigmoidoscopy == 1 & hx_of_polyps == 0 & hx_of_CRC == 0 &
             next_possible_sigmoidoscopy_age == age - 1 ~ as.integer(next_possible_sigmoidoscopy_age + 5),
@@ -207,7 +231,7 @@ apply_background_death_risk <- function(params, sim_data){
           dead == 0 ~ rbinom(n(), size=1, prob=risk)
         )
         
-      ) %>% select(-risk)
+      ) %>% dplyr::select(-risk)
     
     return(out)
     
@@ -225,9 +249,9 @@ apply_QALYs_gained <- function(params, sim_data){
       mutate(
         QALYs_gained = case_when(
           dead == 1 ~ as.numeric(QALYs_gained),
-          dead == 0 & (clinical_localized_CRC == 1 | clinical_regional_CRC == 1) ~ QALYs_gained + (QALY_local_regional_cancer*((1-discount_rate)^(age-50))),
-          dead == 0 & clinical_distant_CRC == 1 ~ QALYs_gained + (QALY_distant_cancer*((1-discount_rate)^(age-50))),
-          TRUE ~ QALYs_gained + (1*((1-discount_rate)^(age-50)))
+          dead == 0 & (clinical_localized_CRC == 1 | clinical_regional_CRC == 1) ~ QALYs_gained + (QALY_local_regional_cancer*((1-discount_rate)^(age-starting_age))),
+          dead == 0 & clinical_distant_CRC == 1 ~ QALYs_gained + (QALY_distant_cancer*((1-discount_rate)^(age-starting_age))),
+          TRUE ~ QALYs_gained + (1*((1-discount_rate)^(age-starting_age)))
         )
 
       )
@@ -291,7 +315,7 @@ apply_clinical_CRC_death_risk <- function(params, sim_data){
         CRC_death == 0 & temp_dead == 0 & dead == 1 ~ as.integer(1),
         TRUE ~ as.integer(0)
       )
-    ) %>% select(-temp_dead)
+    ) %>% dplyr::select(-temp_dead)
     
     return(out)
     
@@ -308,7 +332,7 @@ apply_screening <- function(params, sim_data){
       
       #evaluate whether patient undergoes FOBT
       FOBT = case_when(age != next_possible_colonoscopy_age | hx_of_polyps == 1 | hx_of_CRC == 1 ~ as.integer(0),
-                       screening_type %in% c('FOBT', 'FOBT + flex sig') & dead == 0 & age <= 75 &
+                       individual_screening_type %in% c('FOBT', 'FOBT + flex sig') & dead == 0 & age <= max_screening_age &
                          (normal_mucosa == 1 | low_risk_polyp == 1 | high_risk_polyp == 1 | 
                             preclinical_early_CRC == 1 | preclinical_regional_CRC == 1 | preclinical_distant_CRC == 1) ~ 
                          rbinom(n(), size=1, prob=adherence_FOBT),
@@ -316,7 +340,7 @@ apply_screening <- function(params, sim_data){
                        ),
       #evaluate whether patient undergoes FIT
       FIT = case_when(age != next_possible_colonoscopy_age | hx_of_polyps == 1 | hx_of_CRC == 1 ~ as.integer(0),
-                      screening_type == 'FIT' & dead == 0 & age <= 75 &
+                      individual_screening_type == 'FIT' & dead == 0 & age <= max_screening_age &
                         (normal_mucosa == 1 | low_risk_polyp == 1 | high_risk_polyp == 1 | 
                           preclinical_early_CRC == 1 | preclinical_regional_CRC == 1 | preclinical_distant_CRC == 1) ~ 
                         rbinom(n(), size=1, prob=adherence_FIT),
@@ -324,8 +348,8 @@ apply_screening <- function(params, sim_data){
       ),
       #evaluate whether patient undergoes flex sig
       sigmoidoscopy = case_when(age != next_possible_colonoscopy_age | hx_of_polyps == 1 | hx_of_CRC == 1 ~ as.integer(0),
-                                screening_type %in% c('FOBT + flex sig', 'flex sig') & age == next_possible_sigmoidoscopy_age & 
-                                  dead == 0 & age <= 75 &
+                                individual_screening_type %in% c('FOBT + flex sig', 'flex sig') & age == next_possible_sigmoidoscopy_age & 
+                                  dead == 0 & age <= max_screening_age &
                                   (normal_mucosa == 1 | low_risk_polyp == 1 | high_risk_polyp == 1 | 
                                      preclinical_early_CRC == 1 | preclinical_regional_CRC == 1 | preclinical_distant_CRC == 1) ~
                                   rbinom(n(), size=1, prob=adherence_sigmoidoscopy),
@@ -361,8 +385,8 @@ apply_screening <- function(params, sim_data){
     out <- out %>% mutate(
                               #colonoscopy screening strategy
       colonoscopy = case_when(age == next_possible_colonoscopy_age & 
-                                (screening_type == 'colonoscopy' | hx_of_polyps == 1 | hx_of_CRC == 1) & 
-                                dead == 0 & age <= 75 &
+                                (individual_screening_type == 'colonoscopy' | hx_of_polyps == 1 | hx_of_CRC == 1) & 
+                                dead == 0 & age <= max_screening_age &
                                 clinical_localized_CRC == 0 & clinical_regional_CRC == 0 & clinical_distant_CRC == 0 ~ 
                                 rbinom(n(), size=1, prob=adherence_colonoscopy),
                               
@@ -397,7 +421,7 @@ apply_colonoscopy_risk <- function(params, sim_data){
       )
     )
     
-    out <- sim_data %>% mutate(
+    out <- out %>% mutate(
       dead = case_when(
         perforation == 1 ~ rbinom(n(), size=1, prob=death_colonoscopy_perforation),
         TRUE ~ dead
@@ -570,20 +594,17 @@ apply_CRC_progression <- function(params, sim_data){
         dead == 0 & low_risk_polyp == 1 ~ rbinom(n(), size=1, low_risk_polyp_to_high_risk_polyp),
         TRUE ~ high_risk_polyp
       ),
+      normal_mucosa_to_low_risk_polyp_prob = predict(normal_mucosa_to_low_risk_polyp_model, newdata = data.frame(age=age)),
       low_risk_polyp = case_when(
         dead == 0 & low_risk_polyp == 1 & high_risk_polyp == 1 ~ as.integer(0),
-        dead == 0 & normal_mucosa == 1 & age >= 50 & age < 55 ~ rbinom(n(), size=1, prob=normal_mucosa_to_low_risk_polyp_age_50),
-        dead == 0 & normal_mucosa == 1 & age >= 55 & age < 60 ~ rbinom(n(), size=1, prob=normal_mucosa_to_low_risk_polyp_age_55),
-        dead == 0 & normal_mucosa == 1 & age >= 60 & age < 65 ~ rbinom(n(), size=1, prob=normal_mucosa_to_low_risk_polyp_age_60),
-        dead == 0 & normal_mucosa == 1 & age >= 65 & age < 70 ~ rbinom(n(), size=1, prob=normal_mucosa_to_low_risk_polyp_age_65),
-        dead == 0 & normal_mucosa == 1 & age >= 70 ~ rbinom(n(), size=1, prob=normal_mucosa_to_low_risk_polyp_age_70),
+        dead == 0 & normal_mucosa == 1 ~ rbinom(n(), size=1, prob=normal_mucosa_to_low_risk_polyp_prob),
         TRUE ~ low_risk_polyp
       ),
       normal_mucosa = case_when(
         dead == 0 & normal_mucosa == 1 & low_risk_polyp == 1 ~ as.integer(0),
         TRUE ~ normal_mucosa
       )
-    )
+    ) %>% dplyr::select(-normal_mucosa_to_low_risk_polyp_prob)
     
     out <- out %>% mutate(
       
@@ -617,7 +638,7 @@ apply_cost <- function(params, sim_data){
       cost_attained = cost_attained + ((colonoscopy_cost*colonoscopy + FOBT_cost*FOBT + FIT_cost*FIT + 
         sigmoidoscopy_cost*sigmoidoscopy + colonoscopy_perforation_tx_cost*perforation + 
         local_cancer_tx_cost*clinical_localized_CRC_trt + regional_cancer_tx_cost*clinical_regional_CRC_trt +
-        distant_cancer_tx_cost*clinical_distant_CRC_trt + surveillance_cost*surveillance)*((1-discount_rate)^(age-50)))
+        distant_cancer_tx_cost*clinical_distant_CRC_trt + surveillance_cost*surveillance)*((1-discount_rate)^(age-starting_age)))
     )
     
     return(out)
