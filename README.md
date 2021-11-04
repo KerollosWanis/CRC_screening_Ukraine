@@ -16,4 +16,4 @@ Here we provide the code to reproduce the analysis described in:
 - `summarize_output.R` — R file which uses the simulated data to produce cost-effectiveness results. 
 
 # Correspondence
-If you have any questions, comments, or discover an error, please contact Kerollos Wanis at knwanis@g.harvard.edu
+If you have any questions, comments, or discover an error, please contact Kerollos Wanis at knwanis@g.harvard.edu or knwanis@gmail.com
