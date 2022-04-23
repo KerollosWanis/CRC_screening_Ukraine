@@ -12,7 +12,7 @@ Here we provide the code to reproduce the analysis described in:
 
 # Organization
 - `main.R` — R file which runs the Monte Carlo simulation. Calls on scripts contained in `src`. Expects a subfolder named `output`.
-- `src`  — Folder containing scripts including main functions for monte carlo simulation, as well as `params.R` which contains the values of the parameters used in the base case. `life_table_to_model.R` contains life table mortality probabilities for the base case. 
+- `src`  — Folder containing scripts including main functions for monte carlo simulation, as well as `params.R` which contains the values of the parameters used in the base case. `life_table_to_model.R` contains life table mortality probabilities for the base case. `model_functions - extended.R` contains model functions which add diagnostic and surveillance colonoscopies to the output.
 - `summarize_output.R` — R file which uses the simulated data to produce cost-effectiveness results. 
 
 # Correspondence
